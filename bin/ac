@@ -1,0 +1,134 @@
+#!/usr/bin/env ruby
+
+require "optparse"
+require "nokogiri"
+require "open-uri"
+require "fileutils"
+require "test/unit"
+
+class AtCoderCLI
+  include Test::Unit::Assertions
+
+  def run(args)
+    parse_args(args)
+    run_cmd
+  end
+
+  private
+
+  PRJ_ROOT = File.expand_path("../..", __FILE__).freeze
+  TEMPLATE_DIR = File.join(PRJ_ROOT, "template")
+
+  def parse_args(args)
+    @option = { src_dir: "src", extention: "rb" }
+    opt = OptionParser.new
+    opt.on("-s", "--src-dir DIR") {|v| @option[:src_dir] = v }
+    opt.on("--dry-run") { @option[:dry_run] = true }
+    opt.parse!(args)
+    @option[:cmd] = args.shift
+    @option[:contest] = args.shift
+    @option[:label] = args.shift
+    abort(opt.help) unless @option[:cmd]
+  end
+
+  def run_cmd
+    send(@option[:cmd])
+  end
+
+  def init
+    FileUtils.mkdir_p(src_dir)
+    template = File.join(TEMPLATE_DIR, "template.#{ext}")
+    target_labels.each do |l|
+      FileUtils.cp(template, File.join(src_dir, "#{l}.#{ext}"))
+    end
+  end
+
+  def fetch_testcases
+    FileUtils.mkdir_p(testcase_dir)
+    task_info.each do |t|
+      d = Nokogiri::HTML(open_atcoder(t[:uri]))
+      d.xpath("//h3").each do |node|
+        case node.text
+        when /入力例 (\d+)/
+          save_testcase(t[:label], $1, :in, node.next.text)
+        when /出力例 (\d+)/
+          save_testcase(t[:label], $1, :out, node.next.text)
+        end
+      end
+    end
+  end
+
+  def test_cases
+    tc = {}
+    target_labels.each do |l|
+      Dir.glob(File.join(testcase_dir, "#{l}_*_in.txt")). each do |f|
+        tc[l] ||= []
+        tc[l] << [f, f.sub("_in", "_out")]
+      end
+    end
+    tc
+  end
+
+  def run_test
+    test_cases.each do |l, tc|
+      tc.each do |in_path, out_path|
+        actual = `ruby #{File.join(src_dir, "#{l}.#{ext}")} < #{in_path}`
+        expect = File.read(out_path)
+        assert_equal(expect, actual)
+      end
+    end
+    puts "ALL OK!!!"
+  rescue Test::Unit::AssertionFailedError => e
+    puts e.message
+    exit 1
+  end
+
+  def save_testcase(label, no, type, text)
+    path = File.join(testcase_dir, "#{label}_#{no}_#{type}.txt")
+    File.open(path, "w") {|f| f.print text.gsub("\r\n", "\n") }
+  end
+
+  def task_info
+    doc = Nokogiri::HTML(open_atcoder(tasks_uri))
+    doc.xpath("//table//a").map do |node|
+      u = node.attr("href")
+      l = File.basename(u).split("_").last.downcase
+      { label: l, uri: relative_uri(u) }
+    end.uniq
+  end
+
+  def target_labels
+    Array(@option[:label] || ("a".."f").to_a)
+  end
+
+  ATCODER_URI = "https://atcoder.jp".freeze
+
+  def tasks_uri
+    File.join(ATCODER_URI, "/contests/#{@option[:contest]}/tasks")
+  end
+
+  def relative_uri(path)
+    File.join(ATCODER_URI, path)
+  end
+
+  def src_dir
+    File.join(@option[:src_dir], @option[:contest])
+  end
+
+  def testcase_dir
+    File.join(src_dir, "test")
+  end
+
+  def ext
+    @option[:extention]
+  end
+
+  # USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3864.0 Safari/537.36".freeze
+
+  def open_atcoder(uri)
+    open(uri + "?lang=ja")
+    # open(uri + "?lang=ja", "User-Agent" => USER_AGENT)
+  end
+end
+
+AtCoderCLI.new.run(ARGV) if $PROGRAM_NAME == __FILE__
