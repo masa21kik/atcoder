@@ -24,12 +24,12 @@ class AtCoderCLI
   def parse_args(args)
     @option = { src_dir: "src", extention: "rb" }
     opt = OptionParser.new
-    opt.banner = "Usage: #{$0} <command (#{SUB_COMMANDS.join("|")})> <contest> [args] [options]"
+    opt.banner = "Usage: #{__FILE__} <command (#{SUB_COMMANDS.join("|")})> [args] [options]"
+    opt.on("-c", "--contest CONTEST") {|v| @option[:contest] = v }
+    opt.on("-t", "--tasks TASKS") {|v| @option[:tasks] = v.split(",").map(&:downcase) }
     opt.on("-s", "--src-dir DIR") {|v| @option[:src_dir] = v }
     opt.parse!(args)
     @option[:cmd] = args.shift
-    @option[:contest] = args.shift
-    @option[:label] = args.shift
     abort(opt.help) if %i(cmd contest).any?{|k| !@option[k] } || !SUB_COMMANDS.include?(@option[:cmd])
   end
 
@@ -40,13 +40,13 @@ class AtCoderCLI
   def init
     FileUtils.mkdir_p(src_dir)
     template = File.join(TEMPLATE_DIR, "template.#{ext}")
-    target_labels.each do |l|
+    target_tasks.each do |l|
       FileUtils.cp(template, File.join(src_dir, "#{l}.#{ext}"))
     end
   end
 
   def copy
-    `cat #{src_file(target_labels.first)} | pbcopy`
+    `cat #{src_file(target_tasks.first)} | pbcopy`
   end
 
   def fetch_testcases
@@ -56,9 +56,9 @@ class AtCoderCLI
       d.xpath("//h3").each do |node|
         case node.text
         when /入力例 (\d+)/
-          save_testcase(t[:label], $1, :in, node.next.text)
+          save_testcase(t[:task], $1, :in, node.next.text)
         when /出力例 (\d+)/
-          save_testcase(t[:label], $1, :out, node.next.text)
+          save_testcase(t[:task], $1, :out, node.next.text)
         end
       end
     end
@@ -66,10 +66,10 @@ class AtCoderCLI
 
   def test_cases
     tc = {}
-    target_labels.each do |l|
-      Dir.glob(File.join(testcase_dir, "#{l}_*_in.txt")). each do |f|
-        tc[l] ||= []
-        tc[l] << [f, f.sub("_in", "_out")]
+    target_tasks.each do |t|
+      Dir.glob(File.join(testcase_dir, "#{t}_*_in.txt")). each do |f|
+        tc[t] ||= []
+        tc[t] << [f, f.sub("_in", "_out")]
       end
     end
     tc
@@ -79,10 +79,10 @@ class AtCoderCLI
     cnt_test = 0
     cnt_success = 0
     err_buf = StringIO.new
-    test_cases.each do |l, tc|
+    test_cases.each do |t, tc|
       tc.sort.each do |in_path, out_path|
         cnt_test += 1
-        actual = `ruby #{src_file(l)} < #{in_path}`
+        actual = `ruby #{src_file(t)} < #{in_path}`
         expect = File.read(out_path)
         assert_equal(expect, actual)
         cnt_success += 1
@@ -98,8 +98,8 @@ class AtCoderCLI
     puts "\n#{result} (#{cnt_success}/#{cnt_test})"
   end
 
-  def save_testcase(label, no, type, text)
-    path = File.join(testcase_dir, "#{label}_#{no}_#{type}.txt")
+  def save_testcase(task, no, type, text)
+    path = File.join(testcase_dir, "#{task}_#{no}_#{type}.txt")
     File.open(path, "w") {|f| f.print text.gsub("\r\n", "\n") }
   end
 
@@ -107,13 +107,13 @@ class AtCoderCLI
     doc = Nokogiri::HTML(open_atcoder(tasks_uri))
     doc.xpath("//table//a").map do |node|
       u = node.attr("href")
-      l = File.basename(u).split("_").last.downcase
-      { label: l, uri: relative_uri(u) }
+      t = File.basename(u).split("_").last.downcase
+      { task: t, uri: relative_uri(u) }
     end.uniq
   end
 
-  def target_labels
-    Array(@option[:label] || ("a".."f").to_a)
+  def target_tasks
+    @option[:tasks] || []
   end
 
   ATCODER_URI = "https://atcoder.jp".freeze
@@ -130,8 +130,8 @@ class AtCoderCLI
     File.join(@option[:src_dir], @option[:contest])
   end
 
-  def src_file(label)
-    File.join(src_dir, "#{label}.#{ext}")
+  def src_file(task)
+    File.join(src_dir, "#{task}.#{ext}")
   end
 
   def testcase_dir
