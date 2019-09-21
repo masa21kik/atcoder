@@ -1,5 +1,6 @@
 *.gem
 *.rbc
+Gemfile.lock
 /.config
 /coverage/
 /InstalledFiles
@@ -49,3 +50,6 @@ build-iPhoneSimulator/
 
 # unless supporting rvm < 1.11.0 or doing something fancy, ignore this:
 .rvmrc
+
+node_modules/
+package-lock.json
