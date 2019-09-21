@@ -19,7 +19,7 @@ class AtCoderCLI
 
   PRJ_ROOT = File.expand_path("../..", __FILE__).freeze
   TEMPLATE_DIR = File.join(PRJ_ROOT, "template")
-  SUB_COMMANDS = %w(init fetch_testcases run_test).freeze
+  SUB_COMMANDS = %w(init copy fetch_testcases run_test).freeze
 
   def parse_args(args)
     @option = { src_dir: "src", extention: "rb" }
@@ -43,6 +43,10 @@ class AtCoderCLI
     target_labels.each do |l|
       FileUtils.cp(template, File.join(src_dir, "#{l}.#{ext}"))
     end
+  end
+
+  def copy
+    `cat #{src_file(target_labels.first)} | pbcopy`
   end
 
   def fetch_testcases
@@ -78,7 +82,7 @@ class AtCoderCLI
     test_cases.each do |l, tc|
       tc.sort.each do |in_path, out_path|
         cnt_test += 1
-        actual = `ruby #{File.join(src_dir, "#{l}.#{ext}")} < #{in_path}`
+        actual = `ruby #{src_file(l)} < #{in_path}`
         expect = File.read(out_path)
         assert_equal(expect, actual)
         cnt_success += 1
@@ -124,6 +128,10 @@ class AtCoderCLI
 
   def src_dir
     File.join(@option[:src_dir], @option[:contest])
+  end
+
+  def src_file(label)
+    File.join(src_dir, "#{label}.#{ext}")
   end
 
   def testcase_dir
