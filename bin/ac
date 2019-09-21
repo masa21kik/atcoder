@@ -142,11 +142,8 @@ class AtCoderCLI
     @option[:extention]
   end
 
-  # USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3864.0 Safari/537.36".freeze
-
   def open_atcoder(uri)
     open(uri + "?lang=ja")
-    # open(uri + "?lang=ja", "User-Agent" => USER_AGENT)
   end
 end
 
