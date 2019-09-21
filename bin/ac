@@ -18,6 +18,7 @@ class AtCoderCLI
 
   PRJ_ROOT = File.expand_path("../..", __FILE__).freeze
   TEMPLATE_DIR = File.join(PRJ_ROOT, "template")
+  SUB_COMMANDS = %w(init fetch_testcases run_test).freeze
 
   def parse_args(args)
     @option = { src_dir: "src", extention: "rb" }
@@ -28,7 +29,7 @@ class AtCoderCLI
     @option[:cmd] = args.shift
     @option[:contest] = args.shift
     @option[:label] = args.shift
-    abort(opt.help) unless @option[:cmd]
+    abort(opt.help) if !@option[:cmd] || !SUB_COMMANDS.include?(@option[:cmd])
   end
 
   def run_cmd
