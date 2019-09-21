@@ -23,13 +23,13 @@ class AtCoderCLI
   def parse_args(args)
     @option = { src_dir: "src", extention: "rb" }
     opt = OptionParser.new
+    opt.banner = "Usage: #{$0} <command (#{SUB_COMMANDS.join("|")})> <contest> [args] [options]"
     opt.on("-s", "--src-dir DIR") {|v| @option[:src_dir] = v }
-    opt.on("--dry-run") { @option[:dry_run] = true }
     opt.parse!(args)
     @option[:cmd] = args.shift
     @option[:contest] = args.shift
     @option[:label] = args.shift
-    abort(opt.help) if !@option[:cmd] || !SUB_COMMANDS.include?(@option[:cmd])
+    abort(opt.help) if %i(cmd contest).any?{|k| !@option[k] } || !SUB_COMMANDS.include?(@option[:cmd])
   end
 
   def run_cmd
