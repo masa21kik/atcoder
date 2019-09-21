@@ -20,15 +20,20 @@ class AtCoderCLI
   PRJ_ROOT = File.expand_path("../..", __FILE__).freeze
   TEMPLATE_DIR = File.join(PRJ_ROOT, "template")
   SUB_COMMANDS = %w(init copy run fetch_testcases run_test).freeze
+  LANG_CONF = {
+    ruby: { exec: "ruby", ext: "rb" },
+    go: { exec: "go run", ext: "go" },
+  }
 
   def parse_args(args)
-    @option = { src_dir: "src", extention: "rb" }
+    @option = { src_dir: "src", lang: :ruby }
     opt = OptionParser.new
     opt.banner = "Usage: #{__FILE__} <command (#{SUB_COMMANDS.join("|")})> [args] [options]"
     opt.on("-c", "--contest CONTEST") {|v| @option[:contest] = v }
     opt.on("-t", "--tasks TASKS") {|v| @option[:tasks] = v.split(",").map(&:downcase) }
     opt.on("-i", "--input PATH") {|v| @option[:input_path] = v }
     opt.on("-s", "--src-dir DIR") {|v| @option[:src_dir] = v }
+    opt.on("-l", "--language LANG") {|v| @option[:lang] = v.to_sym }
     opt.parse!(args)
     @option[:cmd] = args.shift
     abort(opt.help) if %i(cmd contest).any?{|k| !@option[k] } || !SUB_COMMANDS.include?(@option[:cmd])
@@ -44,7 +49,8 @@ class AtCoderCLI
 
   def run
     abort("input file is required") unless @option[:input_path]
-    system("time ruby #{src_file(target_tasks.first)} < #{@option[:input_path]}")
+    cmd = exec_task_command(target_tasks.first, @option[:input_path])
+    system("time #{cmd}")
   end
 
   def copy
@@ -84,7 +90,8 @@ class AtCoderCLI
     test_cases.each do |t, tc|
       tc.sort.each do |in_path, out_path|
         cnt_test += 1
-        actual = `ruby #{src_file(t)} < #{in_path}`
+        cmd = exec_task_command(t, in_path)
+        actual = `#{cmd}`
         expect = File.read(out_path)
         assert_equal(expect, actual)
         cnt_success += 1
@@ -141,7 +148,15 @@ class AtCoderCLI
   end
 
   def ext
-    @option[:extention]
+    lang[:ext]
+  end
+
+  def lang
+    LANG_CONF[@option[:lang]]
+  end
+
+  def exec_task_command(task, input)
+    %(#{lang[:exec]} #{src_file(task)} < #{input})
   end
 
   def open_atcoder(uri)
