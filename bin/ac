@@ -5,6 +5,7 @@ require "nokogiri"
 require "open-uri"
 require "fileutils"
 require "test/unit"
+require "stringio"
 
 class AtCoderCLI
   include Test::Unit::Assertions
@@ -71,17 +72,26 @@ class AtCoderCLI
   end
 
   def run_test
+    cnt_test = 0
+    cnt_success = 0
+    err_buf = StringIO.new
     test_cases.each do |l, tc|
-      tc.each do |in_path, out_path|
+      tc.sort.each do |in_path, out_path|
+        cnt_test += 1
         actual = `ruby #{File.join(src_dir, "#{l}.#{ext}")} < #{in_path}`
         expect = File.read(out_path)
         assert_equal(expect, actual)
+        cnt_success += 1
+        print "."
+      rescue Test::Unit::AssertionFailedError => e
+        err_buf.puts "-" * 10 + "\ninput=#{in_path}"
+        err_buf.puts e.message
+        print "F"
       end
     end
-    puts "ALL OK!!!"
-  rescue Test::Unit::AssertionFailedError => e
-    puts e.message
-    exit 1
+    STDERR.puts err_buf.string unless err_buf.string.empty?
+    result = cnt_success == cnt_test ? "ALL OK!!!" : "Failed"
+    puts "\n#{result} (#{cnt_success}/#{cnt_test})"
   end
 
   def save_testcase(label, no, type, text)
