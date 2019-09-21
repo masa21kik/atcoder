@@ -10,16 +10,16 @@ require "stringio"
 class AtCoderCLI
   include Test::Unit::Assertions
 
-  def run(args)
+  def exec(args)
     parse_args(args)
-    run_cmd
+    send(@option[:cmd])
   end
 
   private
 
   PRJ_ROOT = File.expand_path("../..", __FILE__).freeze
   TEMPLATE_DIR = File.join(PRJ_ROOT, "template")
-  SUB_COMMANDS = %w(init copy fetch_testcases run_test).freeze
+  SUB_COMMANDS = %w(init copy run fetch_testcases run_test).freeze
 
   def parse_args(args)
     @option = { src_dir: "src", extention: "rb" }
@@ -27,14 +27,11 @@ class AtCoderCLI
     opt.banner = "Usage: #{__FILE__} <command (#{SUB_COMMANDS.join("|")})> [args] [options]"
     opt.on("-c", "--contest CONTEST") {|v| @option[:contest] = v }
     opt.on("-t", "--tasks TASKS") {|v| @option[:tasks] = v.split(",").map(&:downcase) }
+    opt.on("-i", "--input PATH") {|v| @option[:input_path] = v }
     opt.on("-s", "--src-dir DIR") {|v| @option[:src_dir] = v }
     opt.parse!(args)
     @option[:cmd] = args.shift
     abort(opt.help) if %i(cmd contest).any?{|k| !@option[k] } || !SUB_COMMANDS.include?(@option[:cmd])
-  end
-
-  def run_cmd
-    send(@option[:cmd])
   end
 
   def init
@@ -43,6 +40,11 @@ class AtCoderCLI
     target_tasks.each do |l|
       FileUtils.cp(template, File.join(src_dir, "#{l}.#{ext}"))
     end
+  end
+
+  def run
+    abort("input file is required") unless @option[:input_path]
+    system("time ruby #{src_file(target_tasks.first)} < #{@option[:input_path]}")
   end
 
   def copy
@@ -147,4 +149,4 @@ class AtCoderCLI
   end
 end
 
-AtCoderCLI.new.run(ARGV) if $PROGRAM_NAME == __FILE__
+AtCoderCLI.new.exec(ARGV) if $PROGRAM_NAME == __FILE__
