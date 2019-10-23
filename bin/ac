@@ -31,6 +31,10 @@ class AtCoderCLI
     opt.banner = "Usage: #{__FILE__} <command (#{SUB_COMMANDS.join("|")})> [args] [options]"
     opt.on("-c", "--contest CONTEST") {|v| @option[:contest] = v }
     opt.on("-t", "--tasks TASKS") {|v| @option[:tasks] = v.split(",").map(&:downcase) }
+    opt.on("-r", "--task-range TASK_RANGE") do |v|
+      r = v.split(",").map(&:downcase)
+      @option[:tasks] = (r[0]..r[-1]).to_a
+    end
     opt.on("-i", "--input PATH") {|v| @option[:input_path] = v }
     opt.on("-s", "--src-dir DIR") {|v| @option[:src_dir] = v }
     opt.on("-l", "--language LANG") {|v| @option[:lang] = v.to_sym }
