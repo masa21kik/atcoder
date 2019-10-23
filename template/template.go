@@ -5,33 +5,56 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 )
 
-var sc = bufio.NewScanner(os.Stdin)
+var rdr = bufio.NewReaderSize(os.Stdin, 1024)
 
-func nextWord() string {
-	sc.Scan()
-	return sc.Text()
+func readLine() string {
+	buf := make([]byte, 0, 1024)
+	for {
+		l, p, e := rdr.ReadLine()
+		if e != nil {
+			panic(e)
+		}
+		buf = append(buf, l...)
+		if !p {
+			break
+		}
+	}
+	return string(buf)
 }
 
-func nextInt() int {
-	i, e := strconv.Atoi(nextWord())
+func atoi(s string) int {
+	i, e := strconv.Atoi(s)
 	if e != nil {
 		panic(e)
 	}
 	return i
 }
 
-func main() {
-	sc.Split(bufio.ScanWords)
-	n := nextInt()
-	s := nextWord()
+func readStringArray() []string {
+	return strings.Split(strings.TrimSpace(readLine()), " ")
+}
+
+func readInt() int {
+	return atoi(readLine())
+}
+
+func readIntArray() []int {
 	var a []int
-	var l []string
-	for i := 0; i < n; i++ {
-		l = append(l, nextWord())
-		a = append(a, nextInt())
+	sa := readStringArray()
+	for _, s := range sa {
+		a = append(a, atoi(s))
 	}
+	return a
+}
+
+func main() {
+	n := readInt()
+	s := readLine()
+	l := readStringArray()
+	a := readIntArray()
 	fmt.Println(n, s, l, a)
 
 	var ans int
