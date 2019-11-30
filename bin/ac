@@ -26,7 +26,7 @@ class AtCoderCLI
   }
 
   def parse_args(args)
-    @option = { src_dir: "src", lang: :ruby }
+    @option = { src_dir: "contest", lang: :ruby }
     opt = OptionParser.new
     opt.banner = "Usage: #{__FILE__} <command (#{SUB_COMMANDS.join("|")})> [args] [options]"
     opt.on("-c", "--contest CONTEST") {|v| @option[:contest] = v }
