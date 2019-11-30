@@ -1,2 +1,3 @@
-# cplib
-Competitive Programming Library and tools
+# atcoder
+
+https://atcoder.jp/users/masa21kik
