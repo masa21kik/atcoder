@@ -52,7 +52,6 @@ class AtCoderCLI
   end
 
   def run
-    abort("input file is required") unless @option[:input_path]
     cmd = exec_task_command(target_tasks.first, @option[:input_path])
     system("time #{cmd}")
   end
@@ -160,7 +159,9 @@ class AtCoderCLI
   end
 
   def exec_task_command(task, input)
-    %(#{lang[:exec]} #{src_file(task)} < #{input})
+    cmd = %(#{lang[:exec]} #{src_file(task)})
+    cmd += %( < #{input}) if input
+    cmd
   end
 
   def open_atcoder(uri)
