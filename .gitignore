@@ -10,7 +10,9 @@ Gemfile.lock
 /test/tmp/
 /test/version_tmp/
 /tmp/
-/src/
+/contest/*/test
+a.out
+input
 
 # Used by dotenv library to load environment variables.
 # .env
@@ -53,3 +55,4 @@ build-iPhoneSimulator/
 
 node_modules/
 package-lock.json
+.vscode/
