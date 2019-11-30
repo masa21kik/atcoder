@@ -51,11 +51,11 @@ func readIntArray() []int {
 }
 
 func main() {
-	n := readInt()
-	s := readLine()
-	l := readStringArray()
-	a := readIntArray()
-	fmt.Println(n, s, l, a)
+	N := readInt()
+	S := readLine()
+	L := readStringArray()
+	A := readIntArray()
+	fmt.Println(N, S, L, A)
 
 	var ans int
 	fmt.Println(ans)
