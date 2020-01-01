@@ -1,54 +1,73 @@
 N, M = gets.chomp.split(" ").map(&:to_i)
-AB = []
-LINK = {}
+A = []
+B = []
 M.times do |i|
   a, b = gets.chomp.split(" ").map(&:to_i)
-  AB << [a, b]
-  LINK[a] ||= []
-  LINK[b] ||= []
-  LINK[a] << b
-  LINK[b] << a
+  A << a-1
+  B << b-1
 end
 
-require "set"
+class UnionFind
+  def initialize(n)
+    # 親の番号を格納．負の場合はrootで，グループのサイズ
+    @parent = Array.new(n, -1)
+  end
 
-def connected(root_id)
-  route = {}
-  visited = Set.new([root_id])
-  stack = [root_id]
-  while !stack.empty?
-    nid = stack.pop
-    LINK[nid].each do |oid|
-      next if visited.include?(oid)
-      visited << oid
-      stack << oid
+  def root(x)
+    children = []
+    r = x
+    while @parent[r] >= 0
+      children << r
+      r = @parent[r]
+    end
+    children.each {|a| @parent[a] = r }
+    r
+  end
+
+  def size(x)
+    -@parent[root(x)]
+  end
+
+  def size_list
+    @parent.select {|v| v < 0 }.map {|v| -v }
+  end
+
+  def same?(x, y)
+    root(x) == root(y)
+  end
+
+  def unite(x, y)
+    lhs = root(x)
+    rhs = root(y)
+    return if lhs == rhs
+    ls = -@parent[lhs]
+    rs = -@parent[rhs]
+    if ls < rs
+      @parent[rhs] -= ls
+      @parent[lhs] = rhs
+    else
+      @parent[lhs] -= rs
+      @parent[rhs] = lhs
     end
   end
-  visited
 end
 
-def fuben
-  con = {}
-  con[1] = connected(1)
-  rest = ((2..N).to_set - con[1]).to_a
-  while !rest.empty?
-    id = rest.pop
-    con[id] = connected(id)
-    rest = rest - con[id].to_a
-  end
-  a = con.map {|_, v| v.size }
-  f = 0
-  0.upto(a.size - 2) do |i|
-    (i+1).upto(a.size - 1) do |j|
-      f += a[i] * a[j]
-    end
-  end
-  f
-end
+# 逆順に橋がかかる想定で計算する
+# 最初は橋がないので全組み合わせ(nC2)の不便さ
+ans = Array.new(M)
+ans[M-1] = N * (N-1) / 2
 
-M.times do |i|
-  a, b = AB[i]
-  LINK[a].delete(b)
-  LINK[b].delete(a)
-  puts fuben
+uf = UnionFind.new(N)
+(M-1).downto(1) do |i|
+  if uf.same?(A[i], B[i])
+    ans[i-1] = ans[i]
+  else
+    # 新たにいけるようになった組み合わせ
+    new_route = uf.size(A[i]) * uf.size(B[i])
+    ans[i-1] = ans[i] - new_route
+  end
+  uf.unite(A[i], B[i])
+end
+ans.each do |a|
+  puts a
 end
